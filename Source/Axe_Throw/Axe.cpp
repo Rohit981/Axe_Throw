@@ -74,6 +74,8 @@ void AAxe::Tick(float DeltaTime)
 	if (ref_axe->Is_Axe_Attacking == true)
 	{
 		AxeAttackHit();
+
+		
 	}
 
 	if (ref_axe->Is_Axe_Throwing == true)
@@ -105,7 +107,7 @@ void AAxe::SphereTraceCollider(float Radius)
 
 	    Hit = UKismetSystemLibrary::SphereTraceMulti(GetWorld(), Start, End, Radius,
 				UEngineTypes::ConvertToTraceType(ECollisionChannel::ECC_Camera), false, ActorsToIgnore, EDrawDebugTrace::ForDuration, OutHit, true,
-				FLinearColor::Red, FLinearColor::Green, 5);
+				FLinearColor::Red, FLinearColor::Green, 1);
 
 }
 
@@ -123,6 +125,7 @@ void AAxe::AxeAttackHit()
 
 			if (enemies != nullptr)
 			{
+				
 				enemies->Is_Damaged = true;
 				ref_axe->Is_Axe_Attacking = false;
 			}
@@ -130,8 +133,10 @@ void AAxe::AxeAttackHit()
 			
 		}
 			
-
+		
 	}
+
+	
 		
 }
 
