@@ -91,29 +91,10 @@ void AAxe::Tick(float DeltaTime)
 
 }
 
-void AAxe::OnCompHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
+
+
+void AAxe::SphereTraceCollider(float Radius)
 {
-	if (/*(OtherActor != NULL) && (OtherActor != this) && (OtherComp != NULL) &&*/ ref_axe->Is_Axe_Attacking == true)
-	{
-		AEnemies* enemies;
-
-		enemies = Cast<AEnemies>( OtherActor);
-
-		if (enemies != nullptr)
-		{
-			if (enemies->ActorHasTag(FName(TEXT("Stun"))))
-			{
-				if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, FString::Printf(TEXT("I Hit: %s"), *OtherActor->GetName()));
-			}
-		}
-		
-		
-	}
-}
-
-void AAxe::AxeAttackHit()
-{
-	TArray<FHitResult> OutHit;
 
 	FVector Start = AxeMesh->GetSocketLocation(TEXT("Top"));
 	FVector End = AxeMesh->GetSocketLocation(TEXT("Bottom"));
@@ -122,51 +103,41 @@ void AAxe::AxeAttackHit()
 
 	ActorsToIgnore.Add(ref_axe);
 
-	bool Hit = UKismetSystemLibrary::SphereTraceMulti(GetWorld(), Start, End, SphereRadius,
-		UEngineTypes::ConvertToTraceType(ECollisionChannel::ECC_Camera), false, ActorsToIgnore, EDrawDebugTrace::None, OutHit, true,
-		FLinearColor::Red, FLinearColor::Green, 5);
+	    Hit = UKismetSystemLibrary::SphereTraceMulti(GetWorld(), Start, End, Radius,
+				UEngineTypes::ConvertToTraceType(ECollisionChannel::ECC_Camera), false, ActorsToIgnore, EDrawDebugTrace::ForDuration, OutHit, true,
+				FLinearColor::Red, FLinearColor::Green, 5);
 
-	
-		TArray<AEnemies*> enemies;
+}
+
+void AAxe::AxeAttackHit()
+{
+
+	SphereTraceCollider(SphereRadius);
+
+	for (int i = 0; i < OutHit.Num(); i++)
+	{
+		AEnemies* enemies = Cast<AEnemies>(OutHit[i].GetActor());
 
 		if (Hit)
 		{
-			//if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, FString::Printf(TEXT("Axe Hit: %s"), *OutHit.));
 
-			for (int i = 0; i < OutHit.Num(); i++)
+			if (enemies != nullptr)
 			{
-				enemies.Add(Cast<AEnemies>(OutHit[i].GetActor()));
-
-				for (int j = 0; j < enemies.Num(); j++)
-				{
-					if (enemies[j] != nullptr)
-					{
-						enemies[j]->Is_Damaged = true;
-						ref_axe->Is_Axe_Attacking = false;
-					}
-
-				}
+				enemies->Is_Damaged = true;
+				ref_axe->Is_Axe_Attacking = false;
 			}
+
+			
+		}
 			
 
-	    }
+	}
 		
 }
 
 void AAxe::AxeThrowHit()
 {
-	TArray<FHitResult> OutHit;
-
-	FVector Start = AxeMesh->GetSocketLocation(TEXT("Top"));
-	FVector End = AxeMesh->GetSocketLocation(TEXT("Bottom"));
-
-	TArray<AActor*> ActorsToIgnore;
-
-	ActorsToIgnore.Add(ref_axe);
-
-	bool Hit = UKismetSystemLibrary::SphereTraceMulti(GetWorld(), Start, End, AxeThrowSphereRadius,
-		UEngineTypes::ConvertToTraceType(ECollisionChannel::ECC_Camera), false, ActorsToIgnore, EDrawDebugTrace::ForDuration, OutHit, true,
-		FLinearColor::Red, FLinearColor::Green, 5);
+	SphereTraceCollider(AxeThrowSphereRadius);
 
 	for (int i = 0; i < OutHit.Num(); i++)
 	{

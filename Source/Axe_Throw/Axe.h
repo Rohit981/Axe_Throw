@@ -37,6 +37,9 @@ private:
 	float CurrentDistance;
 	float HalfDistance;
 
+	bool Hit;
+	TArray<FHitResult> OutHit;
+
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
@@ -45,8 +48,8 @@ protected:
 	virtual void Tick(float DeltaTime) override;
 
 	//Collision Check
-	UFUNCTION()
-	void OnCompHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit);
+
+	void SphereTraceCollider(float Radius);
 
 	void AxeAttackHit();
 
