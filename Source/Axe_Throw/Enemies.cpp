@@ -25,6 +25,13 @@ AEnemies::AEnemies()
 void AEnemies::BeginPlay()
 {
 	Super::BeginPlay();
+
+	/*AActor* Owner = GetOwner();
+
+	if (Owner)
+	{
+		Owner->OnTakeAnyDamage.AddDynamics(this, &AEnemies::TakeDamage);
+	}*/
 	
 }
 
@@ -33,31 +40,40 @@ void AEnemies::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	EnemyDamage();
+	//EnemyDamage();
 
 }
 
 void AEnemies::EnemyDamage()
 {
-	if (Is_Damaged == true)
+	
+	Health -= 10;
+
+	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow, FString::Printf(TEXT("Got Hit")));
+
+	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, FString::Printf(TEXT("Health: %i"), Health));
+
+	AnimInstance = EnemyMesh->GetAnimInstance();
+
+	AnimInstance->Montage_Play(HitAnim, 1.f, EMontagePlayReturnType::MontageLength, 0.f);
+
+	Is_Damaged = false;
+
+	if (Health <= 0)
 	{
-		Health -= 10;
-
-		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow, FString::Printf(TEXT("Got Hit")));
-
-		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, FString::Printf(TEXT("Health: %i"), Health));
-
-		AnimInstance = EnemyMesh->GetAnimInstance();
-
-		AnimInstance->Montage_Play(HitAnim, 1.f, EMontagePlayReturnType::MontageLength, 0.f);
-
-		Is_Damaged = false;
-
-		if (Health <= 0)
-		{
-			GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow, FString::Printf(TEXT("Dead")));
-		}
-
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow, FString::Printf(TEXT("Dead")));
 	}
+
+	
 }
+
+//void AEnemies::TakeDamage(AActor* OnTakeAnyDamage,AActor* DamagedActor, float Damage, const UDamageType* DamageType, AController* InstigatedBy, AActor* DamageCauser)
+//{
+//	//if (Damage <= 0)
+//	//{
+//	//	return;
+//	//}
+//
+//	//Health -= Damage;
+//}
 

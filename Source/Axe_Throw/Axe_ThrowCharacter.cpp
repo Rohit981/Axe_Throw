@@ -50,7 +50,7 @@ AAxe_ThrowCharacter::AAxe_ThrowCharacter()
 	FollowCamera->bUsePawnControlRotation = false; // Camera does not rotate relative to arm
 
 
-
+	
 	
 }
 

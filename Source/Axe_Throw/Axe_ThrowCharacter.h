@@ -39,6 +39,8 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category=Camera)
 	float BaseLookUpRate;
 
+	
+
 protected:
 
 	void BeginPlay();
@@ -139,7 +141,7 @@ protected:
 
 	void SpawnAxe();
 
-	AActor* Axe;
+	
 
 	void EquipAxe();
 
@@ -246,6 +248,8 @@ public:
 	bool Is_Axe_Throwing = false;
 	bool InAir = false;
 	bool hasAxe = true;
+
+	class AAxe* Axe;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Axe")
 	bool IsAdsing = false;

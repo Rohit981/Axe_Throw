@@ -71,12 +71,12 @@ void AAxe::Tick(float DeltaTime)
 	}
 
 
-	if (ref_axe->Is_Axe_Attacking == true)
-	{
-		AxeAttackHit();
+	//if (ref_axe->Is_Axe_Attacking == true)
+	//{
+	//	AxeAttackHit();
 
-		
-	}
+	//	
+	//}
 
 	if (ref_axe->Is_Axe_Throwing == true)
 	{
