@@ -31,14 +31,11 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Enemy)
 	int Health = 100;
 
-	UPROPERTY(EditAnywhere, Category = Enemy)
-	int EnemyTypeDamageValue = 0;
+	UFUNCTION(BlueprintCallable, Category = Enemy)
+	void EnemyDamage();
 
-	//UFUNCTION(BlueprintCallable, Category = Enemy)
-	//void EnemyDamage();
-
-	UFUNCTION()
-	void TakeDamage(AActor* DamagedActor, float Damage, const class UDamageType*DamageType, class AController*InstigatedBy, AActor*DamageCauser);
+	/*UFUNCTION()
+	void TakeDamage(AActor*OnTakeAnyDamage,AActor* DamagedActor, float Damage, const class UDamageType*DamageType, class AController*InstigatedBy, AActor*DamageCauser);*/
 
 public:	
 	// Called every frame
