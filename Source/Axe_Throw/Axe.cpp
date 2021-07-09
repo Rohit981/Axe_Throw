@@ -4,6 +4,7 @@
 #include "Axe.h"
 #include "Components/BoxComponent.h"
 #include "Kismet/GameplayStatics.h"
+#include "GameFramework/Controller.h"
 #include "DrawDebugHelpers.h"
 #include "Math/UnrealMathUtility.h"
 
@@ -16,6 +17,8 @@ AAxe::AAxe()
 
 	AxeMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("Axe"));
 	AxeMesh->AttachToComponent(RootComponent, FAttachmentTransformRules::KeepRelativeTransform);
+	
+	RootComponent = AxeMesh;
 
 	
 	HitCollider = CreateDefaultSubobject<UBoxComponent>(TEXT("Collider"));
@@ -32,6 +35,8 @@ AAxe::AAxe()
 
 	
 }
+
+
 
 
 
@@ -110,9 +115,11 @@ void AAxe::AxeThrowHit()
 {
 	SphereTraceCollider(AxeThrowSphereRadius);
 
+
+
 	for (int i = 0; i < OutHit.Num(); i++)
 	{
-		AEnemies* enemies = Cast<AEnemies>(OutHit[i].GetActor());
+		enemies = Cast<AEnemies>(OutHit[i].GetActor());
 
 		if (Hit)
 		{
@@ -120,39 +127,65 @@ void AAxe::AxeThrowHit()
 
 			if (enemies != nullptr)
 			{
-				if (enemies->ActorHasTag(FName(TEXT("Stun"))))
-				{
-					if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString::Printf(TEXT("Stun Enemy")));
-
-					//IS_Acting_Force = false;
-
-					AxeHitLocation = OutHit[i].GetComponent()->GetRelativeLocation();
-
-					if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString::Printf(TEXT("Axe Hit Location: %s"), *AxeHitLocation.ToString()));
-
-					//enemies->Is_Damaged = true;
-
-					Is_Changing_Direction = true;
-
-				}
-
-				/*enemies->EnemyDamage();
+				//enemies->EnemyDamage();
 				
-				if (ref_axe->Return == false)
+				if (ref_axe->Return == true)
 				{
 
 					IS_Acting_Force = false;
+					GetWorldTimerManager().SetTimer(Time_Handle_Manager, this, &AAxe::AxeThrowDMG, 0.01f, false);
+
 
 					ref_axe->InAir = false;
 
-				}*/
+				}
+				else
+				{
+					if (enemies->ActorHasTag(FName(TEXT("Stun"))))
+					{
+						if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString::Printf(TEXT("Stun Enemy")));
+
+						//IS_Acting_Force = false;
+
+						AxeHitLocation = OutHit[i].GetComponent()->GetRelativeLocation();
+
+						if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString::Printf(TEXT("Axe Hit Location: %s"), *AxeHitLocation.ToString()));
+
+						GetWorldTimerManager().SetTimer(Time_Handle_Manager, this, &AAxe::AxeThrowDMG, 0.01f, false);
+
+						Is_Changing_Direction = true;
+
+					}
+				}
+			}
+			else
+			{
+				if (ref_axe->Return == false)
+				{
+					IS_Acting_Force = false;
+					
+					FRotator CameraRot = ref_axe->GetFollowCamera()->GetComponentRotation();
+
+					//AxeMesh->SetWorldRotation(CameraRot);
+
+					SetActorRotation(FRotator(CameraRot.Roll + GetActorRotation().Roll /*+ 180*/ , OutHit[i].GetActor()->GetActorRotation().Pitch, CameraRot.Yaw +GetActorRotation().Yaw /*- 45*/));
+					
+
+				}
 			}
 
 			
 		}
+		
 	}
 
 	
+}
+
+void AAxe::AxeThrowDMG()
+{
+	UGameplayStatics::ApplyDamage(enemies, 10, EventInstigator, this, DamageTypeClass);
+
 }
 
 void AAxe::ThrowAxe()
@@ -225,6 +258,7 @@ void AAxe::ReturnAxe(float DeltaTime)
 
 void AAxe::HitDirection(float DeltaTime)
 {
+
 	if (Is_Changing_Direction == true)
 	{
 		IS_Acting_Force = false;
@@ -233,7 +267,6 @@ void AAxe::HitDirection(float DeltaTime)
 
 		//FRotator AxeRotation = FMath::RInterpConstantTo(this->GetActorRotation(), FRotator(this->GetActorRotation().Euler().X, 0,0), DeltaTime, 50);
 		AxeMesh->AddLocalRotation(FRotator(AxeRotationSpeed, 0, 0));
-
 
 		SetActorLocation(FMath::VInterpConstantTo(this->GetActorLocation(), AxeTargetLocation, DeltaTime, 400));
 

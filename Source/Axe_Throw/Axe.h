@@ -35,6 +35,10 @@ public:
 
 	UPROPERTY(VisibleDefaultsOnly, Category = Mesh)
 	class UProjectileMovementComponent* ProjectileComponent;
+
+	AController* EventInstigator;//ApplyDamage function parameters //
+
+	TSubclassOf<UDamageType>DamageTypeClass;//ApplyDamage function parameters //
 	
 
 private:
@@ -42,11 +46,14 @@ private:
 	float HalfDistance;
 
 	bool Hit;
+	AEnemies* enemies;
 	TArray<FHitResult> OutHit;
 
 	bool Is_Changing_Direction = false;
 
 	bool Is_Change_Transform = false;
+
+	void AxeThrowDMG();
 
 protected:
 	// Called when the game starts or when spawned
@@ -100,6 +107,9 @@ protected:
 	UPrimitiveComponent* AxePrimitive;
 
 	bool IS_Acting_Force = false;
+
+	FTimerHandle Time_Handle_Manager;
+
 
 public:
 
