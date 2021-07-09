@@ -8,7 +8,7 @@
 #include "GameFramework/Controller.h"
 #include "Axe_ThrowCharacter.h"
 #include "Axe.h"
-#include "Enemies.h"
+#include "BaseEnemy.h"
 
 void UAxeAttackAnimNotifyState::NotifyBegin(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation, float TotalDuration)
 {
@@ -48,7 +48,7 @@ void UAxeAttackAnimNotifyState::NotifyTick(USkeletalMeshComponent* MeshComp, UAn
 		{
 			//AActor* HitActor = OutHit[i].GetActor();
 
-			AEnemies* HitActor = Cast<AEnemies>(OutHit[i].GetActor());
+			ABaseEnemy* HitActor = Cast<ABaseEnemy>(OutHit[i].GetActor());
 
 			if (!HitActors.Contains(HitActor))
 			{

@@ -28,7 +28,7 @@ void AEnemies::BeginPlay()
 	Super::BeginPlay();
 
 	
-		this->OnTakeAnyDamage.AddDynamic(this, &AEnemies::TakeDamage);
+	this->OnTakeAnyDamage.AddDynamic(this, &AEnemies::TakeDamage);
 
     
 	
@@ -41,6 +41,22 @@ void AEnemies::Tick(float DeltaTime)
 
 	//EnemyDamage();
 
+	EnemyDead();
+
+}
+
+void AEnemies::EnemyDead()
+{
+	//if (Health <= 0)
+	//{
+	//	UCapsuleComponent* CapsuleComp = GetCapsuleComponent();
+	//	CapsuleComp->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	//	CapsuleComp->SetCollisionResponseToAllChannels(ECR_Ignore);
+
+	//	GetMesh()->SetSimulatePhysics(true);
+	//	GetMesh()->SetCollisionProfileName(TEXT("Ragdoll"));
+	//	//SetActorEnableCollision(true);
+	//}
 }
 
 //void AEnemies::EnemyDamage()

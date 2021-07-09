@@ -54,7 +54,7 @@ void Camera::LockON(UCameraComponent* FollowCamera, AActor* Player)
 
 		 LockedTarget = OutHit.GetActor();
 
-		 enemies = Cast<AEnemies>(LockedTarget);
+		 enemies = Cast<ABaseEnemy>(LockedTarget);
 
 		 enemies->Is_LockedOn = true;
 

@@ -12,8 +12,11 @@
 #include "Components/TimelineComponent.h"
 #include "Camera/CameraComponent.h"
 #include "Math/UnrealMathUtility.h"
+#include "Components/SplineComponent.h"
 #include "Kismet/KismetMathLibrary.h"
+#include "Kismet/GameplayStatics.h"
 #include "DrawDebugHelpers.h"
+#include "BaseEnemy.h"
 
 //////////////////////////////////////////////////////////////////////////
 // AAxe_ThrowCharacter
@@ -49,8 +52,11 @@ AAxe_ThrowCharacter::AAxe_ThrowCharacter()
 	FollowCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName); // Attach the camera to the end of the boom and let the boom adjust to match the controller orientation
 	FollowCamera->bUsePawnControlRotation = false; // Camera does not rotate relative to arm
 
-	Crosshair = CreateDefaultSubobject<UWidgetComponent>(TEXT("Crosshair"));
-	Crosshair->SetupAttachment(CameraBoom);
+	splineComp = CreateDefaultSubobject<USplineComponent>(TEXT("Spline"));
+	splineComp->SetupAttachment(GetMesh(), TEXT("Axe_Socket"));
+	
+	splineComp->bDrawDebug = true;
+	//splineComp->SetHiddenInGame(false);
 
 
 	static ConstructorHelpers::FObjectFinder<UAnimMontage> ThrowMontageObject(TEXT("AnimMontage'/Game/Character/Animations/Montage/Axe_Throw_Montage.Axe_Throw_Montage'"));
@@ -71,11 +77,31 @@ void AAxe_ThrowCharacter::BeginPlay()
 
 	cam.InitalizeTimeLine(CurveFloat, this, "Zoom");
 
+	HUD = Cast<AGameHUD>(UGameplayStatics::GetPlayerController(this, 0)->GetHUD());
+
+	//HUD->CrossHair_Ref->SetVisibility(ESlateVisibility::Hidden);
+	
+
 }
 
 void AAxe_ThrowCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+
+	/*if (AxeCurveTimeline.IsPlaying() || AxeCurveTimeline.IsReversing())
+	{
+		AxeCurveTimeline.TickTimeline(DeltaTime);
+	}
+
+	if (AxeCurveTimeline.IsReversing())
+	{
+		AxeCurveTimeline.SetPlayRate(3);
+	}
+	else
+	{
+		AxeCurveTimeline.SetPlayRate(1);
+
+	}*/
 
 	cam.CurveTimeline.TickTimeline(DeltaTime);
 
@@ -92,9 +118,81 @@ void AAxe_ThrowCharacter::Tick(float DeltaTime)
 		EnemyDetected();
 	}
 
+	//ThrowTrajectory();
 	
 }
 
+
+
+
+void AAxe_ThrowCharacter::ThrowTrajectory()
+{
+
+	FVector StartPos = GetMesh()->GetSocketLocation(TEXT("Axe_Socket"));
+
+	FVector EndPos = (FollowCamera->GetForwardVector() * LaunchVelocity);
+
+	FVector LastTraceDes = StartPos + EndPos;
+	splineComp->SetHiddenInGame(false);
+
+	TArray<AActor*> ActorsToIgnore;
+
+	
+	FOccluderVertexArray hitArray;
+
+	TArray<TEnumAsByte<EObjectTypeQuery>> ObjectTypes;
+
+	ActorsToIgnore.Add(this);
+	ActorsToIgnore.Add(Axe);
+
+	ObjectTypes.Add(EObjectTypeQuery::ObjectTypeQuery1);
+
+	/*FPredictProjectilePathParams Params;
+	FPredictProjectilePathResult PathResults;
+
+	Params.StartLocation = 
+	Params.LaunchVelocity = 
+	Params.ProjectileRadius = 5;*/
+
+
+	if (startTrajectory == true /*&& hasAxe == true*/)
+	{
+		
+		projectileHit = UGameplayStatics::PredictProjectilePath(GetWorld(), ProjectileOutHit, hitArray, LastTraceDes, StartPos, EndPos, true, 5, ObjectTypes, true, ActorsToIgnore, EDrawDebugTrace::ForDuration, 1, 15, 2,0);
+
+		splineImpactPoint = ProjectileOutHit.ImpactPoint.X;
+		//UGameplayStatics::PredictProjectilePath(GetWorld(), Params, PathResults);
+
+		/*for (int i = 0; i< hitArray.Num(); i++)
+		{
+
+			storehitArray.Add(hitArray[i]);
+
+
+		}*/
+		splineComp->SetSplinePoints(hitArray, ESplineCoordinateSpace::World, true);
+
+		//float currentSplineTime = (GetWorld()->GetTimeSeconds()) / 1000;
+		
+		
+		
+		
+		//float splinePoints = splineComp->GetSplineLength();
+
+
+		//GEngine->AddOnScreenDebugMessage(-1, 1, FColor::Red, FString::Printf(TEXT("Spline Points: %f"), splinePoints));
+
+		
+	}
+
+	
+
+
+
+
+
+	//splineVector = splineComp->GetLocationAtDistanceAlongSpline(splineDistance, ESplineCoordinateSpace::World);
+}
 
 void AAxe_ThrowCharacter::SpawnAxe()
 {
@@ -116,6 +214,30 @@ void AAxe_ThrowCharacter::SpawnAxe()
 			}
 		}
 	}
+}
+
+void AAxe_ThrowCharacter::AxeProcessMovementTimeline(float Value)
+{
+	//float splineStartPoint = GetMesh()->GetSocketLocation(TEXT("Axe_Socket")).Y;
+	float splineEndPoint = splineComp->GetSplineLength();
+
+	float splinePoints = FMath::Lerp(0.f, splineEndPoint, Value);
+
+	splineVector = splineComp->GetLocationAtDistanceAlongSpline(splinePoints, ESplineCoordinateSpace::World);
+
+	Axe->AxeMesh->SetWorldLocation(splineVector);
+
+	//Axe->AxeMesh->SetWorldLocationAndRotation(splineVector, splineRotation);
+}
+
+void AAxe_ThrowCharacter::AxeMoveDirection()
+{
+	FOnTimelineFloat TimelineProgress;
+	TimelineProgress.BindUFunction(this, FName("AxeProcessMovementTimeline"));
+	AxeCurveTimeline.AddInterpFloat(AxeCurveFloat, TimelineProgress);
+
+	AxeCurveTimeline.SetTimelineLengthMode(TL_LastKeyFrame);
+	AxeCurveTimeline.Play();
 }
 
 
@@ -161,6 +283,7 @@ void AAxe_ThrowCharacter::SetupPlayerInputComponent(class UInputComponent* Playe
 
 
 #pragma region Camera Lock ON
+
 void AAxe_ThrowCharacter::LockOnTargetRotation(float DeltaTime)
 {
 	if (cam.IsLocked == true)
@@ -198,7 +321,7 @@ void AAxe_ThrowCharacter::CamLockon()
 		cam.IsLocked = false;
 		if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, FString::Printf(TEXT("Cam is Locked: %s"), cam.IsLocked ? "True" : "False"));
 
-		cam.enemies = Cast<AEnemies>(cam.LockedTarget);
+		cam.enemies = Cast<ABaseEnemy>(cam.LockedTarget);
 
 		cam.enemies->Is_LockedOn = false;
 
@@ -234,6 +357,8 @@ void AAxe_ThrowCharacter::EquipAxe()
 
 }
 
+
+
 void AAxe_ThrowCharacter::Armed()
 {
 	if (Is_Draw == true)
@@ -252,6 +377,8 @@ void AAxe_ThrowCharacter::Armed()
 
 
 }
+
+
 
 void AAxe_ThrowCharacter::LightAttack()
 {
@@ -338,6 +465,7 @@ void AAxe_ThrowCharacter::HeavyAttack()
 	{
 		AnimInstance->Montage_Play(Heavy_Sprint_Attack_Montage, 1.2f, EMontagePlayReturnType::MontageLength, 0);
 
+
 	}
 
 	else
@@ -374,6 +502,41 @@ void AAxe_ThrowCharacter::HeavyAttack()
 			ComboCounter = 0;
 
 
+		}
+	}
+}
+
+void AAxe_ThrowCharacter::SprintHeavyAttack()
+{
+	FVector Start = Axe->AxeMesh->GetSocketLocation(TEXT("Top"));
+	FVector End = Axe->AxeMesh->GetSocketLocation(TEXT("Bottom"));
+
+	TArray<AActor*> ActorsToIgnore;
+
+	ActorsToIgnore.Add(Axe);
+	ActorsToIgnore.Add(this);
+
+	TArray<FHitResult> OutHit;
+
+	bool Hit = UKismetSystemLibrary::SphereTraceMulti(GetWorld(), Start, End, HeavyAttackRadius,
+		UEngineTypes::ConvertToTraceType(ECollisionChannel::ECC_Camera), false, ActorsToIgnore, EDrawDebugTrace::ForDuration, OutHit, true,
+		FLinearColor::Red, FLinearColor::Green, 1);
+
+	for (int i = 0; i < OutHit.Num(); i++)
+	{
+		ABaseEnemy* enemies = Cast<ABaseEnemy>(OutHit[i].GetActor());
+
+		if (Hit)
+		{
+			if (OutHit[i].GetActor() == enemies)
+			{
+				//if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, FString::Printf(TEXT("Axe Hit: %s"), *OutHit[i].GetComponent()->GetName()));
+
+				if(OutHit[i].GetComponent()->GetName() == "CollisionCylinder")
+					UGameplayStatics::ApplyDamage(enemies, 40, EventInstigator, this, DamageTypeClass);
+			}
+
+			
 		}
 	}
 }
@@ -516,15 +679,18 @@ void AAxe_ThrowCharacter::StopSprinting()
 
 void AAxe_ThrowCharacter::ADS()
 {
-	if ( hasAxe == true && Is_Draw == true)
+	if ( hasAxe == true && Is_Draw == true && IsSprinting == false)
 	{
 		IsAdsing = true;
 		cam.CurveTimeline.PlayFromStart();
 
-		//Crosshair->SetVisibility(true);
+		
+		HUD->CrossHair_Ref->SetVisibility(ESlateVisibility::Visible);
 
 		
 		enableDetectTrace = true;
+
+		startTrajectory = true;
 		
 	}
 	
@@ -536,9 +702,15 @@ void AAxe_ThrowCharacter::StopADS()
 	IsAdsing = false;
 	cam.CurveTimeline.Reverse();
 
-	Crosshair->SetVisibility(false);
+	
 
 	enableDetectTrace = false;
+
+	//startTrajectory = false;
+
+	
+	HUD->CrossHair_Ref->SetVisibility(ESlateVisibility::Hidden);
+
 
 
 }
@@ -588,11 +760,9 @@ void AAxe_ThrowCharacter::AdsCharacterOrientation()
 
 void AAxe_ThrowCharacter::EnemyDetected()
 {
-	Crosshair->SetVisibility(true);
-
 
 	FVector start = GetMesh()->GetSocketLocation(TEXT("Axe_Socket")) + FVector(0,0,50);
-	FVector End = (FollowCamera->GetForwardVector() * 2000) + start;
+	FVector End = (FollowCamera->GetForwardVector() * 5000) + start;
 
 	FHitResult OutHit;
 	FCollisionQueryParams CollisionParams;
@@ -608,7 +778,7 @@ void AAxe_ThrowCharacter::EnemyDetected()
 
 	bool isHit = GetWorld()->LineTraceSingleByChannel(OutHit, start, End, ECC_Camera, CollisionParams);
 
-	AEnemies* enemies = Cast<AEnemies>(OutHit.GetActor());
+	ABaseEnemy* enemies = Cast<ABaseEnemy>(OutHit.GetActor());
 
 	if (isHit)
 	{
@@ -616,7 +786,7 @@ void AAxe_ThrowCharacter::EnemyDetected()
 		{
 		    //GEngine->AddOnScreenDebugMessage(-1, 1, FColor::Red, FString::Printf(TEXT("Hitting Actor: %s"), *OutHit.GetActor()->GetName()));
 
-			Crosshair->SetTintColorAndOpacity(FLinearColor(1, 0, 0, 1));
+			HUD->CrossHair_Ref->SetColorAndOpacity(FLinearColor(1, 0, 0));
 
 
 		}
@@ -626,7 +796,8 @@ void AAxe_ThrowCharacter::EnemyDetected()
 
 	else
 	{
-		Crosshair->SetTintColorAndOpacity(FLinearColor(1, 1, 1, 1));
+		HUD->CrossHair_Ref->SetColorAndOpacity(FLinearColor(1, 1, 1));
+
 
 	}
 
@@ -643,6 +814,7 @@ void AAxe_ThrowCharacter::Throw()
 	{
 		//AnimInstance->Montage_Play(ThrowMontage, 1.0f, EMontagePlayReturnType::MontageLength, 0);
 
+		
 		AnimMontage->PlayAxeThrow(AnimInstance, ThrowMontage);
 
 	}
@@ -664,7 +836,6 @@ void AAxe_ThrowCharacter::StopThrow()
 
 void AAxe_ThrowCharacter::AxeThrow()
 {
-	
 	hasAxe = false;
 	Is_Axe_Throwing = true;
 }

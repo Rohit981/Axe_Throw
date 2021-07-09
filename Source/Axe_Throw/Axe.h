@@ -7,7 +7,7 @@
 #include "Axe_ThrowCharacter.h"
 #include "Components/SceneComponent.h"
 #include "GameFramework/ProjectileMovementComponent.h"
-#include "Enemies.h"
+#include "BaseEnemy.h"
 #include "Axe.generated.h"
 
 
@@ -46,7 +46,7 @@ private:
 	float HalfDistance;
 
 	bool Hit;
-	AEnemies* enemies;
+	ABaseEnemy* enemies;
 	TArray<FHitResult> OutHit;
 
 	bool Is_Changing_Direction = false;
@@ -54,6 +54,10 @@ private:
 	bool Is_Change_Transform = false;
 
 	void AxeThrowDMG();
+
+	float projectileTime = 0;
+
+	bool IsphysicsEnabled = false;
 
 protected:
 	// Called when the game starts or when spawned

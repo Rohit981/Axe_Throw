@@ -4,7 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Components/TimelineComponent.h"
-#include "Enemies.h"
+#include "BaseEnemy.h"
 #include "Camera/CameraComponent.h"
 
 /**
@@ -32,7 +32,7 @@ public:
 
 	bool IsLocked = false;
 
-	AEnemies* enemies;
+	ABaseEnemy* enemies;
 	
 
 private:

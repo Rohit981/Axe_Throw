@@ -28,9 +28,6 @@ protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Enemy)
-	int Health = 100;
-
 	UPROPERTY(EditAnywhere, Category = Enemy)
 	int EnemyTypeDamageValue = 0;
 
@@ -46,11 +43,18 @@ public:
 
 	bool Is_Damaged = false;
 
+	bool Is_LockedOn = false;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Enemy)
+		int Health = 100;
+
 private:
 
 	UAnimInstance* AnimInstance;
 
 	UPROPERTY(EditAnywhere, Category = Enemy)
     UAnimMontage* HitAnim;
+
+	void EnemyDead();
 
 };

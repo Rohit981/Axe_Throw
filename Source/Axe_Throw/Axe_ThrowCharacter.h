@@ -6,6 +6,7 @@
 #include "GameFramework/Character.h"
 #include "Components/TimelineComponent.h"
 #include "Camera.h"
+#include "GameHUD.h"
 #include "Montage.h"
 #include "Components/WidgetComponent.h"
 #include "Animation/AnimMontage.h"
@@ -28,7 +29,7 @@ class AAxe_ThrowCharacter : public ACharacter
 	class UCameraComponent* FollowCamera;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Axe, meta = (AllowPrivateAccess = "true"))
-	class UWidgetComponent* Crosshair;
+	class USplineComponent* splineComp;
 
 public:
 	AAxe_ThrowCharacter();
@@ -136,6 +137,13 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Axe")
 	int AxeReturnRotationSpeed;
 
+	void ThrowTrajectory();
+
+	
+
+	int drawSplineNumber = 0;
+
+	
 
 	//Axe 
 	UPROPERTY(EditDefaultsOnly, Category = Axe)
@@ -164,6 +172,13 @@ protected:
 	UAnimMontage* UnEquipMontage;
 
 	UAnimInstance* AnimInstance;
+
+	UFUNCTION()
+	void AxeProcessMovementTimeline(float Value);
+	
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Axe)
+	UCurveFloat* AxeCurveFloat;
 
 	//Light Attack
 	void LightAttack();
@@ -215,11 +230,25 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Axe")
 	UAnimMontage* Heavy_Sprint_Attack_Montage;
 
+	UFUNCTION(BlueprintCallable, Category = "Axe")
+	void SprintHeavyAttack();
+
+	UPROPERTY(EditAnywhere, Category = "Axe")
+		float HeavyAttackRadius;
+
+	TSubclassOf<UDamageType>DamageTypeClass;
+
+	AController* EventInstigator;//ApplyDamage function parameters //
+
 	//Camera
 	UPROPERTY(EditDefaultsOnly, Category = Camera)
 	TSubclassOf<UMatineeCameraShake> ref_CamShake;
 
 	void LockOnTargetRotation(float DeltaTime);
+
+	//UI
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Gun)
+	AGameHUD* HUD;
 
 protected:
 	// APawn interface
@@ -245,7 +274,30 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Axe")
 	bool Return = false;
 
+	bool projectileHit = false;
+
+	FOccluderVertexArray storehitArray;
+
+	float LaunchVelocity = 3000;
+
+	FVector splineVector;
+
+	//TArray<FVector> splineVectors;
+
+	FHitResult ProjectileOutHit;
+
+	TArray<FInterpCurveVector> splinePointsArray;
+
 	FVector AxeDirection();
+
+	FTimeline AxeCurveTimeline;
+
+	bool startTrajectory = false;
+
+	float splineImpactPoint;
+
+	void AxeMoveDirection();
+	
 	
 };
 

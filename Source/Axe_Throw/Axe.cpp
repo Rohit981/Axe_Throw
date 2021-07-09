@@ -4,6 +4,7 @@
 #include "Axe.h"
 #include "Components/BoxComponent.h"
 #include "Kismet/GameplayStatics.h"
+#include "Kismet/KismetMathLibrary.h"
 #include "GameFramework/Controller.h"
 #include "DrawDebugHelpers.h"
 #include "Math/UnrealMathUtility.h"
@@ -34,6 +35,7 @@ AAxe::AAxe()
 	ProjectileComponent = CreateDefaultSubobject<UProjectileMovementComponent>(TEXT("Projectile"));
 
 	
+	
 }
 
 
@@ -53,29 +55,31 @@ void AAxe::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 
 	ref_axe = Cast<AAxe_ThrowCharacter>(UGameplayStatics::GetPlayerCharacter(this, 0));
-
-	if (AxeMesh->IsSimulatingPhysics() == true)
+	/*if (physicsTime <= 0)
 	{
-		physicsTime -= DeltaTime;
-	}
-	
-	if (physicsTime <= 0.f && AxeMesh->IsSimulatingPhysics() == true)
-	{
-		AxeMesh->PhysicsTransformUpdateMode = EPhysicsTransformUpdateMode::SimulationUpatesComponentTransform;
-
+		
 		AxeMesh->SetSimulatePhysics(false);
 
+	}*/
 
-	}
+	ProjectileComponent->InitialSpeed = 500;
+	ProjectileComponent->MaxSpeed = 500;
 	
 	
 	HitDirection(DeltaTime);
 
 	if (IS_Acting_Force == true)
 	{
+
+		
 		AxeThrowHit();
 
 		AxeTransform();
+
+		//ref_axe->AxeMoveDirection();
+		
+
+		
 	}
 
 
@@ -89,8 +93,14 @@ void AAxe::Tick(float DeltaTime)
 		IS_Acting_Force = false;
 		ReturnAxe(DeltaTime);
 
+		
 		AxeThrowHit();
 	}
+
+	/*if (GetActorLocation().X > ref_axe->splineImpactPoint)
+	{
+		ref_axe->startTrajectory = false;
+	}*/
 
 }
 
@@ -106,7 +116,7 @@ void AAxe::SphereTraceCollider(float Radius)
 	ActorsToIgnore.Add(ref_axe);
 
 	    Hit = UKismetSystemLibrary::SphereTraceMulti(GetWorld(), Start, End, Radius,
-				UEngineTypes::ConvertToTraceType(ECollisionChannel::ECC_Camera), false, ActorsToIgnore, EDrawDebugTrace::None, OutHit, true,
+				UEngineTypes::ConvertToTraceType(ECollisionChannel::ECC_Camera), false, ActorsToIgnore, EDrawDebugTrace::ForDuration, OutHit, true,
 				FLinearColor::Red, FLinearColor::Green, 1);
 
 }
@@ -119,11 +129,16 @@ void AAxe::AxeThrowHit()
 
 	for (int i = 0; i < OutHit.Num(); i++)
 	{
-		enemies = Cast<AEnemies>(OutHit[i].GetActor());
+		enemies = Cast<ABaseEnemy>(OutHit[i].GetActor());
 
 		if (Hit)
 		{
+			
 			if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, FString::Printf(TEXT("Axe Hit: %s"), *OutHit[i].GetComponent()->GetName()));
+
+			//ref_axe->AxeCurveTimeline.
+
+			IS_Acting_Force = false;
 
 			if (enemies != nullptr)
 			{
@@ -164,11 +179,11 @@ void AAxe::AxeThrowHit()
 				{
 					IS_Acting_Force = false;
 					
-					FRotator CameraRot = ref_axe->GetFollowCamera()->GetComponentRotation();
+					FRotator Rot = ref_axe->GetFollowCamera()->GetComponentRotation();
 
 					//AxeMesh->SetWorldRotation(CameraRot);
 
-					SetActorRotation(FRotator(CameraRot.Roll + GetActorRotation().Roll /*+ 180*/ , OutHit[i].GetActor()->GetActorRotation().Pitch, CameraRot.Yaw +GetActorRotation().Yaw /*- 45*/));
+					SetActorRotation(FRotator(Rot.Roll + GetActorRotation().Roll /*+ 180*/ , OutHit[i].GetActor()->GetActorRotation().Pitch, Rot.Yaw +GetActorRotation().Yaw /*- 45*/));
 					
 
 				}
@@ -190,7 +205,7 @@ void AAxe::AxeThrowDMG()
 
 void AAxe::ThrowAxe()
 {
-	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, FString::Printf(TEXT("Axe Thrown")));
+	//GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, FString::Printf(TEXT("Axe Thrown")));
 
 	this->DetachFromActor(FDetachmentTransformRules(EDetachmentRule::KeepWorld, EDetachmentRule::KeepWorld, EDetachmentRule::KeepWorld, false));
 
@@ -199,27 +214,107 @@ void AAxe::ThrowAxe()
 	ref_axe->Is_Axe_Throwing = false;
 
 
-
 }
 
 void AAxe::AxeTransform()
 {
-	FRotator AxeRotation = this->GetActorRotation();
+	//FRotator AxeRotation = this->GetActorRotation();
 
-	AxeMesh->AddLocalRotation(FRotator( AxeRotationSpeed, 0, 0));
+	
 
-	AxeMesh->AddRelativeLocation(FVector(ref_axe->AxeDirection() * AxeMoveSpeed));
 
-	//ProjectileComponent->bSimulationEnabled = true;
+	//AxeMesh->AddRadialForce(ref_axe->AxeDirection(), 20, AxeMoveSpeed, ERadialImpulseFalloff::RIF_Constant, true);
+
+	//AxeMesh->AddForce(ref_axe->AxeDirection() * AxeMoveSpeed * AxeMesh->GetMass());
+	
+
+	//AxeMesh->AddAngularImpulse(ref_axe->AxeDirection() * AxeMoveSpeed);
+
+	//AxeMesh->AddAngularImpulse(ref_axe->AxeDirection() * AxeMoveSpeed);
+	//AxeMesh->AddTorque(ref_axe->AxeDirection() * AxeMoveSpeed);
+
+	//AxeMesh->AddForceAtLocation(AxeMesh->GetForwardVector() * AxeMoveSpeed, AxeMesh->GetForwardVector());
+
+
+	
+	//ProjectileComponent->bSimulationEnabled = 1;
+	//ProjectileComponent->bAutoActivate = 1;
+	if (IsphysicsEnabled == false)
+	{
+		AxeMesh->AddRelativeLocation(ref_axe->AxeDirection()* AxeMoveSpeed, false, nullptr, ETeleportType::TeleportPhysics);
+
+		AxeMesh->AddLocalRotation(FRotator( AxeRotationSpeed, 0, 0), false, nullptr, ETeleportType::TeleportPhysics);
+	}
+
+	projectileTime += GetWorld()->DeltaTimeSeconds;
+
+	if (projectileTime >= 1.5)
+	{
+		IsphysicsEnabled = true;
+
+		//AxeMesh->SetSimulatePhysics(true);
+
+		//AxeMesh->AddForce(GetActorForwardVector() * AxeMoveSpeed);
+
+		ProjectileComponent->bSimulationEnabled = true;
+
+		ProjectileComponent->Velocity = GetActorForwardVector() * ProjectileComponent->InitialSpeed;
+
+		
+		//AxeMesh->AddLocalRotation(UKismetMathLibrary::FindLookAtRotation(GetActorForwardVector(), GetActorForwardVector()+ AxeMoveSpeed));
+
+
+	}
+	//ProjectileComponent->Velocity = ref_axe->AxeDirection() * ProjectileComponent->InitialSpeed;
+
+	/*AxeMesh->SetSimulatePhysics(true);
+
+	
+
+	
+
+	//ProjectileComponent->SetVelocityInLocalSpace(AxeMesh->GetForwardVector());
+
+	//
+	/*for (int i = 0; i < ref_axe->storehitArray.Num(); i++)
+	{*/
+
+		
+
+	
+
+		//SetActorLocation(FMath::VInterpConstantTo(this->GetActorLocation(), ref_axe->storehitArray[i].Projection(), GetWorld()->DeltaTimeSeconds, AxeMoveSpeed));
+
+		/*FLatentActionInfo LatentInfo;
+		LatentInfo.CallbackTarget = this;*/
+
+		//UKismetSystemLibrary::MoveComponentTo(RootComponent, ref_axe->storehitArray[i], FRotator(0,0,0),false, false, AxeMoveSpeed* GetWorld()->DeltaTimeSeconds,true ,EMoveComponentAction::Move , LatentInfo);
+		//SetActorLocation()
+
+		
+		
+		
+	/*}*/
+
+		
+
+		//AxeMesh->AddRelativeLocation(FMath::VInterpConstantTo(this->GetActorLocation(), ref_axe->ProjectileOutHit.ImpactPoint, DeltaTime, AxeMoveSpeed));
+
 
 }
 
 void AAxe::ReturnAxe(float DeltaTime)
 {
 
+	//ref_axe->AxeCurveTimeline.Reverse();
+	
+	ProjectileComponent->bSimulationEnabled = false;
+
 	AxeMesh->SetSimulatePhysics(false);
 
-	
+
+	physicsTime = 0;
+
 	ref_axe->InAir = true;
 
 	ref_axe->IsAdsing = true;
@@ -233,12 +328,9 @@ void AAxe::ReturnAxe(float DeltaTime)
 	
 	FVector Target = ((GetActorRightVector() * FMath::Lerp(HalfDistance, 0.f, Alpha)) + ref_axe->GetMesh()->GetSocketLocation(TEXT("Axe_Socket")));
 
-	
 	AxeMesh->AddLocalRotation(FRotator(-AxeRotationSpeed, 0, 0));
 
-	SetActorLocation(FMath::VInterpConstantTo(this->GetActorLocation(), Target, DeltaTime, AxeReturnSpeed));
-
-	
+	SetActorLocation(FMath::VInterpConstantTo(this->GetActorLocation(), Target, DeltaTime, AxeReturnSpeed),false, nullptr, ETeleportType::TeleportPhysics);
 
 	if (CurrentDistance <= 5)
 	{
@@ -252,8 +344,12 @@ void AAxe::ReturnAxe(float DeltaTime)
 
 		ref_axe->IsAdsing = false;
 
+		projectileTime = 0;
 
+		IsphysicsEnabled = false;
 	}
+
+	
 }
 
 void AAxe::HitDirection(float DeltaTime)
