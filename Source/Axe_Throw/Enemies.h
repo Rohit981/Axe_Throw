@@ -4,7 +4,6 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
-#include "Components/WidgetComponent.h"
 #include "Animation/AnimMontage.h"
 #include "Enemies.generated.h"
 
@@ -25,12 +24,6 @@ public:
 	UPROPERTY(VisibleDefaultsOnly, Category = Collision)
 	class UCapsuleComponent* Collider;
 
-	UPROPERTY(EditAnywhere, Category = Mesh)
-    class USceneComponent* SceneComponent;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
-	class UWidgetComponent* LockOnUI;
-
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
@@ -47,15 +40,11 @@ protected:
 	UFUNCTION()
 	void TakeDamage(AActor* DamagedActor, float Damage, const class UDamageType*DamageType, class AController*InstigatedBy, AActor*DamageCauser);
 
-	void LockOnWidget();
-
 public:	
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 
 	bool Is_Damaged = false;
-
-	bool Is_LockedOn = false;
 
 private:
 
@@ -63,9 +52,5 @@ private:
 
 	UPROPERTY(EditAnywhere, Category = Enemy)
     UAnimMontage* HitAnim;
-
-	bool IsHit = false;
-
-	float AnimTime = 0;
 
 };

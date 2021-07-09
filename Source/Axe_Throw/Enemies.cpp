@@ -13,17 +13,11 @@ AEnemies::AEnemies()
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 
-	SceneComponent = CreateDefaultSubobject<USceneComponent>(TEXT("Root"));
-	SceneComponent->SetupAttachment(RootComponent);
+	EnemyMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("Enemy"));
+	EnemyMesh->AttachToComponent(RootComponent, FAttachmentTransformRules::KeepRelativeTransform);
 
 	Collider = CreateDefaultSubobject<UCapsuleComponent>(TEXT("Capsual"));
-	Collider->AttachToComponent(SceneComponent, FAttachmentTransformRules::KeepRelativeTransform);
-
-	EnemyMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("Enemy"));
-	EnemyMesh->AttachToComponent(Collider, FAttachmentTransformRules::KeepRelativeTransform);
-
-	LockOnUI = CreateDefaultSubobject<UWidgetComponent>(TEXT("LockON"));
-	LockOnUI->AttachToComponent(EnemyMesh, FAttachmentTransformRules::KeepRelativeTransform);
+	Collider->AttachToComponent(EnemyMesh, FAttachmentTransformRules::KeepRelativeTransform);
 
 	
 }
@@ -34,7 +28,7 @@ void AEnemies::BeginPlay()
 	Super::BeginPlay();
 
 	
-	this->OnTakeAnyDamage.AddDynamic(this, &AEnemies::TakeDamage);
+		this->OnTakeAnyDamage.AddDynamic(this, &AEnemies::TakeDamage);
 
     
 	
@@ -45,26 +39,7 @@ void AEnemies::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	//if (IsHit == true)
-	//{
-	//	FVector forwardVector = this->GetActorForwardVector();
-
-	//	//Collider->AddRelativeLocation(forwardVector * 0.5f);
-
-	//	AnimTime += DeltaTime;
-	//}
-
-	//
-
-	//if (AnimTime >= 1.3)
-	//{
-	//	IsHit = false;
-
-	//	AnimTime = 0;
-	//}
-
-
-	LockOnWidget();
+	//EnemyDamage();
 
 }
 
@@ -97,7 +72,7 @@ void AEnemies::TakeDamage(AActor* DamagedActor, float Damage, const UDamageType*
 
 	if (Damage <= 0)
 	{
-		IsHit = false;
+		return;
 	}
 
 	Health -= Damage;
@@ -109,31 +84,5 @@ void AEnemies::TakeDamage(AActor* DamagedActor, float Damage, const UDamageType*
 	AnimInstance = EnemyMesh->GetAnimInstance();
 	
 	AnimInstance->Montage_Play(HitAnim, 1.f, EMontagePlayReturnType::MontageLength, 0.f);
-
-	
-
-	IsHit = true;
-	
-
 }
-
-void AEnemies::LockOnWidget()
-{
-	if (Is_LockedOn == true)
-	{
-		LockOnUI->SetVisibility(true);
-
-		LockOnUI->AddRelativeRotation(FRotator(0,0,1));
-
-	}
-	else
-	{
-		LockOnUI->SetVisibility(false);
-
-	}
-}
-
-
-
-
 
