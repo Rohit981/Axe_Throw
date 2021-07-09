@@ -46,16 +46,17 @@ void UAxeAttackAnimNotifyState::NotifyTick(USkeletalMeshComponent* MeshComp, UAn
 
 		for (int i = 0; i < OutHit.Num(); i++)
 		{
-			AActor* HitActor = OutHit[i].GetActor();
+			//AActor* HitActor = OutHit[i].GetActor();
+
+			AEnemies* HitActor = Cast<AEnemies>(OutHit[i].GetActor());
 
 			if (!HitActors.Contains(HitActor))
 			{
 				HitActors.Add(HitActor);
 
-				if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, FString::Printf(TEXT("Axe Hit: %s"), *HitActors[i]->GetName()));
-
-				UGameplayStatics::ApplyDamage(HitActor, 10.f, EventInstigator, Axe_ref, DamageTypeClass);
+				UGameplayStatics::ApplyDamage(HitActor, DamageValue, EventInstigator, Axe_ref, DamageTypeClass);
 			}
+			
 
 		}
 	}
