@@ -19,6 +19,7 @@ AEnemies::AEnemies()
 	Collider = CreateDefaultSubobject<UCapsuleComponent>(TEXT("Capsual"));
 	Collider->AttachToComponent(EnemyMesh, FAttachmentTransformRules::KeepRelativeTransform);
 
+	
 }
 
 // Called when the game starts or when spawned
@@ -26,12 +27,10 @@ void AEnemies::BeginPlay()
 {
 	Super::BeginPlay();
 
-	/*AActor* Owner = GetOwner();
+	
+		this->OnTakeAnyDamage.AddDynamic(this, &AEnemies::TakeDamage);
 
-	if (Owner)
-	{
-		Owner->OnTakeAnyDamage.AddDynamics(this, &AEnemies::TakeDamage);
-	}*/
+    
 	
 }
 
@@ -44,36 +43,46 @@ void AEnemies::Tick(float DeltaTime)
 
 }
 
-void AEnemies::EnemyDamage()
+//void AEnemies::EnemyDamage()
+//{
+//	
+//	/*Health -= 10;
+//
+//	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow, FString::Printf(TEXT("Got Hit")));
+//
+//	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, FString::Printf(TEXT("Health: %i"), Health));
+//
+//	AnimInstance = EnemyMesh->GetAnimInstance();
+//
+//	AnimInstance->Montage_Play(HitAnim, 1.f, EMontagePlayReturnType::MontageLength, 0.f);
+//
+//	Is_Damaged = false;
+//
+//	if (Health <= 0)
+//	{
+//		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow, FString::Printf(TEXT("Dead")));
+//	}*/
+//
+//	
+//}
+
+void AEnemies::TakeDamage(AActor* DamagedActor, float Damage, const UDamageType* DamageType, AController* InstigatedBy, AActor* DamageCauser)
 {
-	
-	Health -= 10;
+	//Damage = EnemyTypeDamageValue;
+
+	if (Damage <= 0)
+	{
+		return;
+	}
+
+	Health -= Damage;
 
 	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow, FString::Printf(TEXT("Got Hit")));
-
+	
 	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, FString::Printf(TEXT("Health: %i"), Health));
 
 	AnimInstance = EnemyMesh->GetAnimInstance();
-
-	AnimInstance->Montage_Play(HitAnim, 1.f, EMontagePlayReturnType::MontageLength, 0.f);
-
-	Is_Damaged = false;
-
-	if (Health <= 0)
-	{
-		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow, FString::Printf(TEXT("Dead")));
-	}
-
 	
+	AnimInstance->Montage_Play(HitAnim, 1.f, EMontagePlayReturnType::MontageLength, 0.f);
 }
-
-//void AEnemies::TakeDamage(AActor* OnTakeAnyDamage,AActor* DamagedActor, float Damage, const UDamageType* DamageType, AController* InstigatedBy, AActor* DamageCauser)
-//{
-//	//if (Damage <= 0)
-//	//{
-//	//	return;
-//	//}
-//
-//	//Health -= Damage;
-//}
 
