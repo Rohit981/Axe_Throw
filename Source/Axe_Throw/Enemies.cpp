@@ -13,11 +13,14 @@ AEnemies::AEnemies()
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 
-	EnemyMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("Enemy"));
-	EnemyMesh->AttachToComponent(RootComponent, FAttachmentTransformRules::KeepRelativeTransform);
+	SceneComponent = CreateDefaultSubobject<USceneComponent>(TEXT("Root"));
+	SceneComponent->SetupAttachment(RootComponent);
 
 	Collider = CreateDefaultSubobject<UCapsuleComponent>(TEXT("Capsual"));
-	Collider->AttachToComponent(EnemyMesh, FAttachmentTransformRules::KeepRelativeTransform);
+	Collider->AttachToComponent(SceneComponent, FAttachmentTransformRules::KeepRelativeTransform);
+
+	EnemyMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("Enemy"));
+	EnemyMesh->AttachToComponent(Collider, FAttachmentTransformRules::KeepRelativeTransform);
 
 	
 }
@@ -28,7 +31,7 @@ void AEnemies::BeginPlay()
 	Super::BeginPlay();
 
 	
-		this->OnTakeAnyDamage.AddDynamic(this, &AEnemies::TakeDamage);
+	this->OnTakeAnyDamage.AddDynamic(this, &AEnemies::TakeDamage);
 
     
 	
@@ -40,6 +43,15 @@ void AEnemies::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 
 	//EnemyDamage();
+
+	//if (IsHit == true)
+	//{
+	//	FVector ForwardVector = this->GetActorForwardVector();
+
+	//	EnemyMesh->AddRelativeLocation(ForwardVector * 2);
+
+	//	
+	//}
 
 }
 
@@ -84,5 +96,11 @@ void AEnemies::TakeDamage(AActor* DamagedActor, float Damage, const UDamageType*
 	AnimInstance = EnemyMesh->GetAnimInstance();
 	
 	AnimInstance->Montage_Play(HitAnim, 1.f, EMontagePlayReturnType::MontageLength, 0.f);
+
+	/*FVector ForwardVector = this->GetActorForwardVector();
+
+	Collider->AddImpulse(ForwardVector * 0.0002f);*/
+	//IsHit = true;
+
 }
 

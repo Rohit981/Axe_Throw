@@ -24,6 +24,9 @@ public:
 	UPROPERTY(VisibleDefaultsOnly, Category = Collision)
 	class UCapsuleComponent* Collider;
 
+	UPROPERTY(EditAnywhere, Category = Mesh)
+    class USceneComponent* SceneComponent;
+
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
@@ -52,5 +55,7 @@ private:
 
 	UPROPERTY(EditAnywhere, Category = Enemy)
     UAnimMontage* HitAnim;
+
+	bool IsHit = false;
 
 };

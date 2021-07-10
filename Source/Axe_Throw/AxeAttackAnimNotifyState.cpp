@@ -41,7 +41,7 @@ void UAxeAttackAnimNotifyState::NotifyTick(USkeletalMeshComponent* MeshComp, UAn
 		ActorsToIgnore = {Axe_ref->ref_axe};
 
 		UKismetSystemLibrary::SphereTraceMulti(Axe_ref->GetWorld(), StartLocation, EndLocation, 20.f,
-			UEngineTypes::ConvertToTraceType(ECollisionChannel::ECC_Camera), false, ActorsToIgnore, EDrawDebugTrace::ForDuration, OutHit, true,
+			ETraceTypeQuery::TraceTypeQuery3, false, ActorsToIgnore, EDrawDebugTrace::None, OutHit, true,
 			FLinearColor::Red, FLinearColor::Green, 1);
 
 		for (int i = 0; i < OutHit.Num(); i++)
