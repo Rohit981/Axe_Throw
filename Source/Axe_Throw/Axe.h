@@ -5,6 +5,8 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "Axe_ThrowCharacter.h"
+#include "Components/SceneComponent.h"
+#include "GameFramework/ProjectileMovementComponent.h"
 #include "Enemies.h"
 #include "Axe.generated.h"
 
@@ -29,8 +31,10 @@ public:
 	UPROPERTY(VisibleDefaultsOnly, Category = Collision)
 	class UBoxComponent* HitCollider;
 
-	UPROPERTY(EditAnywhere, Category = Axe)
 	AAxe_ThrowCharacter* ref_axe;
+
+	UPROPERTY(VisibleDefaultsOnly, Category = Mesh)
+	class UProjectileMovementComponent* ProjectileComponent;
 	
 
 private:
@@ -40,6 +44,10 @@ private:
 	bool Hit;
 	TArray<FHitResult> OutHit;
 
+	bool Is_Changing_Direction = false;
+
+	bool Is_Change_Transform = false;
+
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
@@ -48,10 +56,7 @@ protected:
 	virtual void Tick(float DeltaTime) override;
 
 	//Collision Check
-
 	void SphereTraceCollider(float Radius);
-
-	void AxeAttackHit();
 
 	void AxeThrowHit();
 
@@ -61,6 +66,8 @@ protected:
 	void AxeTransform();
 
 	void ReturnAxe(float DeltaTime);
+
+	void HitDirection(float DeltaTime);
 
 	//Variables for Axe throw and Return
 	UPROPERTY(EditAnywhere, Category = Axe)
@@ -81,8 +88,14 @@ protected:
 	UPROPERTY(EditAnywhere, Category = AxeThrow)
 	float AxeReturnSpeed;
 
+	UPROPERTY(VisibleAnywhere, Category = AxeThrow)
+	FVector AxeHitLocation;
+
 	UPROPERTY(EditDefaultsOnly, Category = Camera)
 	TSubclassOf<UMatineeCameraShake> ref_CamShake;
+
+	UPROPERTY(VisibleAnywhere, Category = Axe)
+	float physicsTime = 0;
 
 	UPrimitiveComponent* AxePrimitive;
 

@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Components/TimelineComponent.h"
+#include "Enemies.h"
 #include "Camera/CameraComponent.h"
 
 /**
@@ -20,10 +21,18 @@ public:
 	UFUNCTION()
 	void InitalizeTimeLine(UCurveFloat* CurveFloat, UObject* Object, FName function);
 
-	float EndFOV;
-	float StartFOV;
+	void LockON(UCameraComponent* FollowCamera, AActor* Player);
+
+	float EndFOV = 90;
+	float StartFOV = 75;
 
 	FTimeline CurveTimeline;
+
+	AActor* LockedTarget;
+
+	bool IsLocked = false;
+
+	AEnemies* enemies;
 	
 
 private:

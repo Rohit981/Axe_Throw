@@ -33,7 +33,7 @@ AAxe_ThrowCharacter::AAxe_ThrowCharacter()
 	bUseControllerRotationRoll = false;
 
 	// Configure character movement
-	GetCharacterMovement()->bOrientRotationToMovement = true; // Character moves in the direction of input...	
+	//GetCharacterMovement()->bOrientRotationToMovement = true; // Character moves in the direction of input...	
 	GetCharacterMovement()->RotationRate = FRotator(0.0f, 540.0f, 0.0f); // ...at this rotation rate
 	GetCharacterMovement()->JumpZVelocity = 600.f;
 	GetCharacterMovement()->AirControl = 0.2f;
@@ -49,7 +49,16 @@ AAxe_ThrowCharacter::AAxe_ThrowCharacter()
 	FollowCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName); // Attach the camera to the end of the boom and let the boom adjust to match the controller orientation
 	FollowCamera->bUsePawnControlRotation = false; // Camera does not rotate relative to arm
 
+	Crosshair = CreateDefaultSubobject<UWidgetComponent>(TEXT("Crosshair"));
+	Crosshair->SetupAttachment(CameraBoom);
 
+
+	static ConstructorHelpers::FObjectFinder<UAnimMontage> ThrowMontageObject(TEXT("AnimMontage'/Game/Character/Animations/Montage/Axe_Throw_Montage.Axe_Throw_Montage'"));
+
+	if (ThrowMontageObject.Succeeded())
+	{
+		ThrowMontage = ThrowMontageObject.Object;
+	}
 	
 	
 }
@@ -70,52 +79,20 @@ void AAxe_ThrowCharacter::Tick(float DeltaTime)
 
 	cam.CurveTimeline.TickTimeline(DeltaTime);
 
-
-	/*if (InAir == true)
-	{
-		
-		if (Return == true)
-		{
-			ReturnAxeLocationAndRotation(DeltaTime);
-		}
-		
-
-    }*/
-
 	AnimInstance = GetMesh()->GetAnimInstance();
 
-	if (IsAdsing == true)
-	{
-		FollowCamera->bUsePawnControlRotation = true;
+	AdsCharacterOrientation();
 
-		bUseControllerRotationYaw = FollowCamera->bUsePawnControlRotation;
-
-		GetCharacterMovement()->bOrientRotationToMovement = false;
-	}
-	else
-	{
-		FollowCamera->bUsePawnControlRotation = false;
-
-		bUseControllerRotationYaw = FollowCamera->bUsePawnControlRotation;
-
-		GetCharacterMovement()->bOrientRotationToMovement = true;
-	}
+	LightAttackCounter(DeltaTime);
 	
-	if(IsChangingPosition == true)
-	GetWorld()->GetFirstPlayerController()->GetPawn()->SetActorLocation(FMath::VInterpConstantTo(PlayerCurrentLocation, EndPlayerLocation, DeltaTime, 1));
-	
-	if (Is_Counting == true)
-	{
-		ComboTime += DeltaTime;
-	} 
+	LockOnTargetRotation(DeltaTime);
 
-	if (ComboTime >= 3)
+	if (enableDetectTrace == true)
 	{
-		ComboCounter = 0;
-		ComboTime = 0;
-		Is_Counting = false;
-		Attack_Enable = true;
+		EnemyDetected();
 	}
+
+	
 }
 
 
@@ -142,9 +119,6 @@ void AAxe_ThrowCharacter::SpawnAxe()
 }
 
 
-
-
-
 //////////////////////////////////////////////////////////////////////////
 // Input
 void AAxe_ThrowCharacter::SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent)
@@ -169,6 +143,9 @@ void AAxe_ThrowCharacter::SetupPlayerInputComponent(class UInputComponent* Playe
 
 	PlayerInputComponent->BindAxis("MoveForward", this, &AAxe_ThrowCharacter::MoveForward);
 	PlayerInputComponent->BindAxis("MoveRight", this, &AAxe_ThrowCharacter::MoveRight);
+	PlayerInputComponent->BindAction("Evade", IE_Pressed, this, &AAxe_ThrowCharacter::Evade);
+
+	PlayerInputComponent->BindAction("LockOn", IE_Pressed, this, &AAxe_ThrowCharacter::CamLockon);
 
 	// We have 2 versions of the rotation bindings to handle different kinds of devices differently
 	// "turn" handles devices that provide an absolute delta, such as a mouse.
@@ -183,10 +160,63 @@ void AAxe_ThrowCharacter::SetupPlayerInputComponent(class UInputComponent* Playe
 
 
 
+#pragma region Camera Lock ON
+void AAxe_ThrowCharacter::LockOnTargetRotation(float DeltaTime)
+{
+	if (cam.IsLocked == true)
+	{
 
+		FRotator Current = GetController()->GetPawn()->GetActorRotation();
+
+		FRotator Target = UKismetMathLibrary::FindLookAtRotation(GetActorLocation(), cam.LockedTarget->GetActorLocation());
+
+		FRotator TargetRotation = FMath::RInterpTo(Current, Target, DeltaTime, 4.f);
+
+		GetController()->SetControlRotation(TargetRotation);
+
+
+
+	}
+}
+
+
+void AAxe_ThrowCharacter::CamLockon()
+{
+	if (cam.IsLocked == false)
+	{
+		cam.LockON(FollowCamera, this);
+		
+		if (cam.IsLocked == true)
+		{
+			bUseControllerRotationYaw = true;
+
+		}
+
+	}
+	else
+	{
+		cam.IsLocked = false;
+		if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, FString::Printf(TEXT("Cam is Locked: %s"), cam.IsLocked ? "True" : "False"));
+
+		cam.enemies = Cast<AEnemies>(cam.LockedTarget);
+
+		cam.enemies->Is_LockedOn = false;
+
+		cam.LockedTarget = nullptr;
+		bUseControllerRotationYaw = false;
+
+	}
+
+	
+
+
+}
+#pragma endregion
+
+#pragma region Melee Attack
 void AAxe_ThrowCharacter::EquipAxe()
 {
-	
+
 	if (Is_Draw == false)
 	{
 
@@ -196,12 +226,12 @@ void AAxe_ThrowCharacter::EquipAxe()
 	}
 	else
 	{
-		
+
 		AnimInstance->Montage_Play(UnEquipMontage, 1.5f, EMontagePlayReturnType::MontageLength, 0);
 
 		Is_Draw = false;
 	}
-	
+
 }
 
 void AAxe_ThrowCharacter::Armed()
@@ -219,13 +249,13 @@ void AAxe_ThrowCharacter::Armed()
 
 		Axe->AttachToComponent(GetMesh(), FAttachmentTransformRules(EAttachmentRule::SnapToTarget, true), TEXT("Unequip_Axe"));
 	}
-	
+
 
 }
 
 void AAxe_ThrowCharacter::LightAttack()
 {
-	if (IsAdsing == false)
+	if (IsAdsing == false && hasAxe == true)
 	{
 		if (Attack_Enable == true)
 		{
@@ -286,18 +316,20 @@ void AAxe_ThrowCharacter::LightAttack()
 
 			}
 		}
-		
+
 
 	}
 	else
 	{
 		if (hasAxe == true)
 		{
-			IsAxeThrow = true;
+			//AnimInstance->Montage_Play(ThrowMontage, 1.0f, EMontagePlayReturnType::MontageLength, 0);
+
+		    AnimMontage->PlayAxeThrow(AnimInstance, ThrowMontage);
 
 		}
 	}
-	
+
 }
 
 void AAxe_ThrowCharacter::HeavyAttack()
@@ -346,39 +378,29 @@ void AAxe_ThrowCharacter::HeavyAttack()
 	}
 }
 
-void AAxe_ThrowCharacter::Attack()
-{
-	Is_Axe_Attacking = true;
-}
-
-void AAxe_ThrowCharacter::StopAttack()
-{
-	Is_Axe_Attacking = false;
-
-	
-}
-
 void AAxe_ThrowCharacter::IncreaseCounter()
 {
 	Attack_Enable = true;
 	ComboCounter += 1;
 }
 
-void AAxe_ThrowCharacter::ChangePosition()
+void AAxe_ThrowCharacter::LightAttackCounter(float Delta)
 {
-	PlayerCurrentLocation = GetWorld()->GetFirstPlayerController()->GetPawn()->GetActorLocation();
+	if (Is_Counting == true)
+	{
+		ComboTime += Delta;
+	}
 
-	EndPlayerLocation = FVector(PlayerCurrentLocation.X + 450, PlayerCurrentLocation.Y, PlayerCurrentLocation.Z);
-
-	//IsChangingPosition = true;
-	GetWorld()->GetFirstPlayerController()->GetPawn()->SetActorLocation(EndPlayerLocation);
-
-
-	
+	if (ComboTime >= 3)
+	{
+		ComboCounter = 0;
+		ComboTime = 0;
+		Is_Counting = false;
+		Attack_Enable = true;
+	}
 }
 
-
-
+#pragma endregion
 
 #pragma region Movement
 void AAxe_ThrowCharacter::TurnAtRate(float Rate)
@@ -396,11 +418,18 @@ void AAxe_ThrowCharacter::LookUpAtRate(float Rate)
 
 void AAxe_ThrowCharacter::MoveForward(float Value)
 {
+
 	if ((Controller != nullptr) && (Value != 0.0f) && Is_Moving == true)
 	{
 		// find out which way is forward
-		const FRotator Rotation = Controller->GetControlRotation();
-		const FRotator YawRotation(0, Rotation.Yaw, 0);
+	
+		if (GetCharacterMovement()->bOrientRotationToMovement == true)
+		{
+			GetCharacterMovement()->bUseControllerDesiredRotation = true;
+			GetCharacterMovement()->bOrientRotationToMovement = false;
+		}
+
+		
 
 		if (!IsSprinting)
 		{
@@ -408,33 +437,29 @@ void AAxe_ThrowCharacter::MoveForward(float Value)
 
 		}
 
-		// get forward vector
-		const FVector Direction = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X);
-		AddMovementInput(Direction, Value);
-
+		AddMovementInput(GetActorForwardVector(), Value);
 
 	}
 }
 
 void AAxe_ThrowCharacter::MoveRight(float Value)
 {
+
 	if ((Controller != nullptr) && (Value != 0.0f) && Is_Moving == true)
 	{
-		// find out which way is right
-		const FRotator Rotation = Controller->GetControlRotation();
-		const FRotator YawRotation(0, Rotation.Yaw, 0);
 
+		if (GetCharacterMovement()->bOrientRotationToMovement == true)
+		{
+			GetCharacterMovement()->bUseControllerDesiredRotation = true;
+			GetCharacterMovement()->bOrientRotationToMovement = false;
+		}
 
 		if (!IsSprinting)
 		{
 			Value *= 0.4;
 		}
 
-		// get right vector 
-		const FVector Direction = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y);
-		// add movement in that direction
-		AddMovementInput(Direction, Value);
-
+		AddMovementInput(GetActorRightVector(), Value);
 
 	}
 }
@@ -447,19 +472,32 @@ void AAxe_ThrowCharacter::EnableMovement()
 {
 	Is_Moving = true;
 
-	
+}
+
+void AAxe_ThrowCharacter::Evade()
+{
+	AddMovementInput(GetActorForwardVector(), 100);
+
+	if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, FString::Printf(TEXT("Evade Pressed")));
 
 }
 
+void AAxe_ThrowCharacter::Roll()
+{
 
+}
 
 #pragma endregion
 
 #pragma region Sprint
 void AAxe_ThrowCharacter::Sprinting()
 {
-	cam.CurveTimeline.PlayFromStart();
-	IsSprinting = true;
+	if (GetInputAxisValue("MoveForward") > 0)
+	{
+		cam.CurveTimeline.PlayFromStart();
+		IsSprinting = true;
+
+	}
 	
 }
 
@@ -475,17 +513,33 @@ void AAxe_ThrowCharacter::StopSprinting()
 #pragma endregion
 
 #pragma region ADS
+
 void AAxe_ThrowCharacter::ADS()
 {
-	IsAdsing = true;
-	cam.CurveTimeline.PlayFromStart();
+	if ( hasAxe == true && Is_Draw == true)
+	{
+		IsAdsing = true;
+		cam.CurveTimeline.PlayFromStart();
 
+		//Crosshair->SetVisibility(true);
+
+		
+		enableDetectTrace = true;
+		
+	}
+	
 }
 
 void AAxe_ThrowCharacter::StopADS()
 {
+	
 	IsAdsing = false;
 	cam.CurveTimeline.Reverse();
+
+	Crosshair->SetVisibility(false);
+
+	enableDetectTrace = false;
+
 
 }
 
@@ -512,10 +566,74 @@ void AAxe_ThrowCharacter::Zoom(float Value)
 	FollowCamera->FieldOfView = NewFOV;
 }
 
+void AAxe_ThrowCharacter::AdsCharacterOrientation()
+{
+	if (IsAdsing == true)
+	{
+		FollowCamera->bUsePawnControlRotation = true;
+
+		bUseControllerRotationYaw = FollowCamera->bUsePawnControlRotation;
+
+		GetCharacterMovement()->bOrientRotationToMovement = false;
+	}
+	else
+	{
+		FollowCamera->bUsePawnControlRotation = false;
+
+		bUseControllerRotationYaw = FollowCamera->bUsePawnControlRotation;
+
+		GetCharacterMovement()->bOrientRotationToMovement = true;
+	}
+}
+
+void AAxe_ThrowCharacter::EnemyDetected()
+{
+	Crosshair->SetVisibility(true);
+
+
+	FVector start = GetMesh()->GetSocketLocation(TEXT("Axe_Socket")) + FVector(0,0,50);
+	FVector End = (FollowCamera->GetForwardVector() * 2000) + start;
+
+	FHitResult OutHit;
+	FCollisionQueryParams CollisionParams;
+
+	TArray<AActor*> ActorsToIgnore;
+
+	ActorsToIgnore.Add(this);
+	ActorsToIgnore.Add(Axe);
+
+	CollisionParams.AddIgnoredActors(ActorsToIgnore);
+
+	//DrawDebugLine(GetWorld(), start, End, FColor::Red, false, 0.5f, 0, 1);
+
+	bool isHit = GetWorld()->LineTraceSingleByChannel(OutHit, start, End, ECC_Camera, CollisionParams);
+
+	AEnemies* enemies = Cast<AEnemies>(OutHit.GetActor());
+
+	if (isHit)
+	{
+		if (enemies != nullptr)
+		{
+		    //GEngine->AddOnScreenDebugMessage(-1, 1, FColor::Red, FString::Printf(TEXT("Hitting Actor: %s"), *OutHit.GetActor()->GetName()));
+
+			Crosshair->SetTintColorAndOpacity(FLinearColor(1, 0, 0, 1));
+
+
+		}
+		
+
+	}
+
+	else
+	{
+		Crosshair->SetTintColorAndOpacity(FLinearColor(1, 1, 1, 1));
+
+	}
+
+}
+
+
 #pragma endregion
-
-
-
 
 #pragma region AxeThrow
 void AAxe_ThrowCharacter::Throw()
@@ -523,7 +641,9 @@ void AAxe_ThrowCharacter::Throw()
 
 	if (hasAxe == true)
 	{
-		IsAxeThrow = true;
+		//AnimInstance->Montage_Play(ThrowMontage, 1.0f, EMontagePlayReturnType::MontageLength, 0);
+
+		AnimMontage->PlayAxeThrow(AnimInstance, ThrowMontage);
 
 	}
 	else
@@ -544,9 +664,12 @@ void AAxe_ThrowCharacter::StopThrow()
 
 void AAxe_ThrowCharacter::AxeThrow()
 {
+	
 	hasAxe = false;
 	Is_Axe_Throwing = true;
 }
+
+
 
 FVector AAxe_ThrowCharacter::AxeDirection()
 {

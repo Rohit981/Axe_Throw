@@ -22,6 +22,9 @@ AEnemies::AEnemies()
 	EnemyMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("Enemy"));
 	EnemyMesh->AttachToComponent(Collider, FAttachmentTransformRules::KeepRelativeTransform);
 
+	LockOnUI = CreateDefaultSubobject<UWidgetComponent>(TEXT("LockON"));
+	LockOnUI->AttachToComponent(EnemyMesh, FAttachmentTransformRules::KeepRelativeTransform);
+
 	
 }
 
@@ -42,16 +45,26 @@ void AEnemies::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	//EnemyDamage();
-
 	//if (IsHit == true)
 	//{
-	//	FVector ForwardVector = this->GetActorForwardVector();
+	//	FVector forwardVector = this->GetActorForwardVector();
 
-	//	EnemyMesh->AddRelativeLocation(ForwardVector * 2);
+	//	//Collider->AddRelativeLocation(forwardVector * 0.5f);
 
-	//	
+	//	AnimTime += DeltaTime;
 	//}
+
+	//
+
+	//if (AnimTime >= 1.3)
+	//{
+	//	IsHit = false;
+
+	//	AnimTime = 0;
+	//}
+
+
+	LockOnWidget();
 
 }
 
@@ -84,7 +97,7 @@ void AEnemies::TakeDamage(AActor* DamagedActor, float Damage, const UDamageType*
 
 	if (Damage <= 0)
 	{
-		return;
+		IsHit = false;
 	}
 
 	Health -= Damage;
@@ -97,10 +110,30 @@ void AEnemies::TakeDamage(AActor* DamagedActor, float Damage, const UDamageType*
 	
 	AnimInstance->Montage_Play(HitAnim, 1.f, EMontagePlayReturnType::MontageLength, 0.f);
 
-	/*FVector ForwardVector = this->GetActorForwardVector();
+	
 
-	Collider->AddImpulse(ForwardVector * 0.0002f);*/
-	//IsHit = true;
+	IsHit = true;
+	
 
 }
+
+void AEnemies::LockOnWidget()
+{
+	if (Is_LockedOn == true)
+	{
+		LockOnUI->SetVisibility(true);
+
+		LockOnUI->AddRelativeRotation(FRotator(0,0,1));
+
+	}
+	else
+	{
+		LockOnUI->SetVisibility(false);
+
+	}
+}
+
+
+
+
 

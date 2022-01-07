@@ -6,6 +6,8 @@
 #include "GameFramework/Character.h"
 #include "Components/TimelineComponent.h"
 #include "Camera.h"
+#include "Montage.h"
+#include "Components/WidgetComponent.h"
 #include "Animation/AnimMontage.h"
 #include "Axe_ThrowCharacter.generated.h"
 
@@ -25,8 +27,8 @@ class AAxe_ThrowCharacter : public ACharacter
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
 	class UCameraComponent* FollowCamera;
 
-	
-
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Axe, meta = (AllowPrivateAccess = "true"))
+	class UWidgetComponent* Crosshair;
 
 public:
 	AAxe_ThrowCharacter();
@@ -72,6 +74,11 @@ protected:
 
 	bool IsSprinting = false;
 
+	//Evade
+	void Evade();
+
+	void Roll();
+
 	//ADS
 	void ADS();
 	void StopADS();
@@ -84,11 +91,19 @@ protected:
 
 	Camera cam;
 
-	
-	
+	void AdsCharacterOrientation();
 
-	//Axe Throw
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Axe")
+	void EnemyDetected();
+
+	bool enableDetectTrace = false;
+
+	//Lock On Variables
+	void CamLockon();
+	
+	//Montage
+	Montage* AnimMontage;
+
+	//Axe Throw	
 	bool IsAxeThrow = false;
 
 	void Throw();
@@ -97,11 +112,12 @@ protected:
 	UFUNCTION(BlueprintCallable, Category = "Axe")
 	void AxeThrow();
 
+	//UPROPERTY(EditAnywhere, Category = "Axe")
+	UAnimMontage* ThrowMontage;
+
 	//void DrawLineTrace();
 
 	FVector AxeHitLoc;
-
-	
 
 	FRotator AxeRotation;
 	FRotator RotationValue;
@@ -120,28 +136,12 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Axe")
 	int AxeReturnRotationSpeed;
 
-	//void AxeLocationAndRotation(float DeltaTime);
 
-	//AxeRecall
-
-	/*void Recall();
-
-	void ReturnAxeLocationAndRotation(float DeltaTime);*/
-
-	
-
-	float HalfDistance;
-
-	
-
-	
 	//Axe 
 	UPROPERTY(EditDefaultsOnly, Category = Axe)
 	TSubclassOf<class AAxe> AxeSubclass;
 
 	void SpawnAxe();
-
-	
 
 	void EquipAxe();
 
@@ -201,18 +201,10 @@ protected:
 	UPROPERTY(VisibleAnywhere, Category = "Axe")
 	float ComboTime = 0;
 
-	UFUNCTION(BlueprintCallable, Category = "Axe")
-	void Attack();
-
-	UFUNCTION(BlueprintCallable, Category = "Axe")
-	void StopAttack();
-
+	void LightAttackCounter(float Delta);
 
 	//Heavy Attack
 	void HeavyAttack();
-
-	UFUNCTION(BlueprintCallable, Category = "Axe")
-	void ChangePosition();
 
 	UPROPERTY(EditAnywhere, Category = "Axe")
 	UAnimMontage* Heavy_Attack_1_Montage;
@@ -223,15 +215,11 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Axe")
 	UAnimMontage* Heavy_Sprint_Attack_Montage;
 
-	FVector PlayerCurrentLocation;
-
-	FVector EndPlayerLocation;
-
-	bool IsChangingPosition = false;
-
 	//Camera
 	UPROPERTY(EditDefaultsOnly, Category = Camera)
 	TSubclassOf<UMatineeCameraShake> ref_CamShake;
+
+	void LockOnTargetRotation(float DeltaTime);
 
 protected:
 	// APawn interface
@@ -258,9 +246,6 @@ public:
 	bool Return = false;
 
 	FVector AxeDirection();
-	
-
-
 	
 };
 
